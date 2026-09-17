@@ -2,18 +2,18 @@
 # Azure Communication Services. SMTP username = a resource linked to an Entra
 # application; password = a client secret of that application.
 locals {
-  email_sender = local.email.enabled ? "DoNotReply@${data.azapi_resource.email_domain[0].output.properties.fromSenderDomain}" : null
+  email_sender = local.email.enabled ? "DoNotReply@${module.email_communication_service[0].domain_from_sender_domains["azure_managed"]}" : null
 }
 
 module "email_communication_service" {
   source  = "Azure/avm-res-communication-emailservice/azurerm"
-  version = "0.2.0"
+  version = "0.3.0"
   count   = local.email.enabled ? 1 : 0
 
-  name                = local.names.email_communication_service
-  resource_group_name = module.resource_group.name
-  location            = local.location
-  data_location       = local.email.data_location
+  name          = local.names.email_communication_service
+  parent_id     = module.resource_group.resource_id
+  location      = local.location
+  data_location = local.email.data_location
 
   # Azure managed domain: no DNS to configure, but capped at 5 emails per minute
   # and 10 per hour per subscription.
@@ -26,20 +26,6 @@ module "email_communication_service" {
 
   tags             = local.tags
   enable_telemetry = local.enable_telemetry
-
-  # The module reads the resource group through a data source.
-  depends_on = [module.resource_group]
-}
-
-# The module outputs neither the domain ID nor its sender domain.
-data "azapi_resource" "email_domain" {
-  count = local.email.enabled ? 1 : 0
-
-  type                   = "Microsoft.Communication/emailServices/domains@2023-03-31"
-  resource_id            = "${module.email_communication_service[0].resource_id}/domains/AzureManagedDomain"
-  response_export_values = ["properties.fromSenderDomain"]
-
-  depends_on = [module.email_communication_service]
 }
 
 # No AVM module for Communication Services.
@@ -57,7 +43,7 @@ resource "azurerm_communication_service_email_domain_association" "n8n" {
   count = local.email.enabled ? 1 : 0
 
   communication_service_id = azurerm_communication_service.n8n[0].id
-  email_service_domain_id  = data.azapi_resource.email_domain[0].id
+  email_service_domain_id  = module.email_communication_service[0].domain_resource_ids["azure_managed"]
 }
 
 # SMTP credentials: the client secret of this application is the SMTP password.
