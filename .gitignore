@@ -1,0 +1,28 @@
+# Terraform
+# NB: .terraform.lock.hcl is intentionally COMMITTED -- it pins the provider
+# versions resolved by terraform init.
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# No tfvars in this PoC: every setting lives in terraform/locals.tf
+*.tfvars
+*.tfvars.json
+
+# Diagrams are not published
+*.drawio
+*.bkp
+
+# Local artefacts
+*.pfx
+*.pem
+.DS_Store
