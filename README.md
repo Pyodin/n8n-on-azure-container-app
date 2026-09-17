@@ -81,31 +81,6 @@ Resource names follow `<type>-<workload>-<environment>-<location_short>-<instanc
 names (Key Vault, PostgreSQL, Redis) end with 5 characters derived from the subscription ID instead
 of the instance, so they do not collide across subscriptions and stay stable between runs.
 
-## Validate
-
-```bash
-terraform output -raw n8n_url    # open it and create the owner account
-```
-
-Create a workflow with a Webhook trigger, activate it and `curl` its production URL. Then check that
-the **worker**, not the main, ran it — that is *the* queue mode test:
-
-```bash
-RG=$(terraform output -raw resource_group_name)
-MAIN=$(terraform output -raw container_app_main_name)
-WORKER=$(terraform output -raw container_app_worker_name)
-
-az containerapp logs show -n "$WORKER" -g "$RG" --follow
-```
-
-KEDA knows nothing about n8n: it reads the length of a Redis list. If `listName` in
-[terraform/container_apps.tf](terraform/container_apps.tf) does not match the actual BullMQ list, the
-worker never scales out, silently. List the real keys:
-
-```bash
-az containerapp exec -n "$MAIN" -g "$RG" \
-  --command "sh -c 'apk add --no-cache redis >/dev/null 2>&1; redis-cli -h \$QUEUE_BULL_REDIS_HOST -p \$QUEUE_BULL_REDIS_PORT -a \$QUEUE_BULL_REDIS_PASSWORD --tls --no-auth-warning KEYS \"*\"'"
-```
 
 ### PostgreSQL
 
